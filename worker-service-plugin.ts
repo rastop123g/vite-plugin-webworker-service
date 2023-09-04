@@ -5,6 +5,8 @@ import { getExports } from "./getExports";
 
 export default function workerServicePlugin(): Plugin {
   const workerName = `virtual-webworker-${Date.now()}.js`;
+  let idr = 0;
+  let idp = 0;
   let server: ViteDevServer | null = null;
   let exportsInService: {
     [key: string]: string[];
@@ -74,6 +76,7 @@ export default function workerServicePlugin(): Plugin {
     load: {
       order: "pre",
       async handler(id) {
+        idr++;
         if (id.startsWith("front-service-")) {
           let res = `import frw from "thread:main:worker-adapter"\n`;
           if (exportsInService[id]) {
@@ -90,25 +93,29 @@ export default function workerServicePlugin(): Plugin {
           return res.toString();
         } else if (id.includes(workerName)) {
           return new Promise((resolve) => {
-            setTimeout(() => {
-              let res = readFileSync(
-                path.resolve(__dirname, "src/backWorker.js"),
-              ).toString();
-              res += "\n";
-              for (const key in exportsInService) {
-                const filepath = JSON.parse(
-                  key.replace("front-service-", ""),
-                ).id;
-                const importStr = `import {${exportsInService[key].join(
-                  ",",
-                )}} from "${filepath}"\n`;
-                res += importStr;
-                for (const exp of exportsInService[key]) {
-                  res += `adapter.register("${exp}",${exp})\n`;
+            const timer = setInterval(() => {
+              if ((idr - idp === 1 && idr !== 1) || isDev) {
+                let res = readFileSync(
+                  path.resolve(__dirname, "src/backWorker.js"),
+                ).toString();
+                res += "\n";
+                for (const key in exportsInService) {
+                  const filepath = JSON.parse(
+                    key.replace("front-service-", ""),
+                  ).id;
+                  const importStr = `import {${exportsInService[key].join(
+                    ",",
+                  )}} from "${filepath}"\n`;
+                  res += importStr;
+                  for (const exp of exportsInService[key]) {
+                    res += `adapter.register("${exp}",${exp})\n`;
+                  }
                 }
+                clearInterval(timer)
+                resolve(res);
               }
-              resolve(res);
-            }, 2000);
+              //TODO: for dev use hot reload
+            }, isDev ? 2000 : 10);
           });
         }
       },
@@ -130,7 +137,7 @@ export default function workerServicePlugin(): Plugin {
           map: null,
         };
       }
-      if(id === "thread:main:worker-adapter") {
+      if (id === "thread:main:worker-adapter") {
         return {
           code: src.replace("__virtual_worker_file_name", workerName),
           map: null,
@@ -155,6 +162,9 @@ export default function workerServicePlugin(): Plugin {
         code: res,
         map: null,
       };
+    },
+    moduleParsed() {
+      idp++;
     },
   };
 }

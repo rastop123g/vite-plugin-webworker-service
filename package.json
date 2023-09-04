@@ -1,0 +1,34 @@
+{
+  "name": "vite-plugin-webworker-service",
+  "version": "1.0.1",
+  "author": "Rastopchin Alexandr",
+  "keywords": ["webworker", "autogenerate", "typed"],
+  "type": "module",
+  "main": "./lib/index.js",
+  "module": "./lib/index.js",
+  "exports": {
+    ".": {
+      "import": "./lib/index.js",
+      "require": "./lib/index.js"
+    }
+  },
+  "files": ["lib"],
+  "scripts": {
+    "test:dev": "vite",
+    "test:build": "tsc && vite build",
+    "build": "tsup -d lib --format esm --entry.index worker-service-plugin.ts --entry.src/backWorker src/backWorker.ts --entry.src/frontWorker src/frontWorker.ts",
+    "preview": "vite preview",
+    "compile:fw": "tsc --module esnext --moduleResolution node src/frontWorker.ts",
+    "compile:bw": "tsc --module esnext --moduleResolution node src/backWorker.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.9",
+    "acorn": "^8.10.0",
+    "tsup": "^7.2.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
+  },
+  "dependencies": {
+    "eventemitter3": "^5.0.1"
+  }
+}

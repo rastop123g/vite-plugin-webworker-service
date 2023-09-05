@@ -1,8 +1,20 @@
 {
   "name": "vite-plugin-webworker-service",
-  "version": "1.0.1",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "version": "1.0.3",
   "author": "Rastopchin Alexandr",
-  "keywords": ["webworker", "autogenerate", "typed"],
+  "keywords": [
+    "webworker",
+    "autogenerate",
+    "typed"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rastop123g/vite-plugin-webworker-service"
+  },
+  "license": "MIT",
   "type": "module",
   "main": "./lib/index.js",
   "module": "./lib/index.js",
@@ -12,11 +24,13 @@
       "require": "./lib/index.js"
     }
   },
-  "files": ["lib"],
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "test:dev": "vite",
     "test:build": "tsc && vite build",
-    "build": "tsup -d lib --format esm --entry.index worker-service-plugin.ts --entry.src/backWorker src/backWorker.ts --entry.src/frontWorker src/frontWorker.ts",
+    "build": "tsup -d lib --format esm --dts --entry.index worker-service-plugin.ts --entry.src/backWorker src/backWorker.ts --entry.src/frontWorker src/frontWorker.ts",
     "preview": "vite preview",
     "compile:fw": "tsc --module esnext --moduleResolution node src/frontWorker.ts",
     "compile:bw": "tsc --module esnext --moduleResolution node src/backWorker.ts"

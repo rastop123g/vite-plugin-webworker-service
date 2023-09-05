@@ -2,6 +2,10 @@ import { ViteDevServer, type Plugin } from "vite";
 import { readFileSync } from "fs";
 import path from "path";
 import { getExports } from "./getExports";
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+
+const __dirname = path.dirname(__filename);
 
 export default function workerServicePlugin(): Plugin {
   const workerName = `virtual-webworker-${Date.now()}.js`;

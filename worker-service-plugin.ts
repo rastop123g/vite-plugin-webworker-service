@@ -51,6 +51,10 @@ export default function workerServicePlugin(): Plugin {
               const exps = getExports(ast);
               exportsInService[replacedID] = exps;
             }
+            const mod = server?.moduleGraph.getModuleById(workerName)
+            if(mod) {
+              server?.reloadModule(mod)
+            }
           } else {
             if (!resolution || resolution.external) return resolution;
             const info = await this.load(resolution);
@@ -92,31 +96,48 @@ export default function workerServicePlugin(): Plugin {
           let res = readFileSync(path.resolve(__dirname, "src/frontWorker.js"));
           return res.toString();
         } else if (id.includes(workerName)) {
-          return new Promise((resolve) => {
-            const timer = setInterval(() => {
-              if ((idr - idp === 1 && idr !== 1) || isDev) {
-                let res = readFileSync(
-                  path.resolve(__dirname, "src/backWorker.js"),
-                ).toString();
-                res += "\n";
-                for (const key in exportsInService) {
-                  const filepath = JSON.parse(
-                    key.replace("front-service-", ""),
-                  ).id;
-                  const importStr = `import {${exportsInService[key].join(
-                    ",",
-                  )}} from "${filepath}"\n`;
-                  res += importStr;
-                  for (const exp of exportsInService[key]) {
-                    res += `adapter.register("${exp}",${exp})\n`;
+          if (!isDev) {
+            return new Promise((resolve) => {
+              const timer = setInterval(() => {
+                if (idr - idp === 1 && idr !== 1) {
+                  let res = readFileSync(
+                    path.resolve(__dirname, "src/backWorker.js"),
+                  ).toString();
+                  res += "\n";
+                  for (const key in exportsInService) {
+                    const filepath = JSON.parse(
+                      key.replace("front-service-", ""),
+                    ).id;
+                    const importStr = `import {${exportsInService[key].join(
+                      ",",
+                    )}} from "${filepath}"\n`;
+                    res += importStr;
+                    for (const exp of exportsInService[key]) {
+                      res += `adapter.register("${exp}",${exp})\n`;
+                    }
                   }
+                  clearInterval(timer);
+                  resolve(res);
                 }
-                clearInterval(timer)
-                resolve(res);
+              }, 10);
+            });
+          } else {
+            let res = readFileSync(
+              path.resolve(__dirname, "src/backWorker.js"),
+            ).toString();
+            res += "\n";
+            for (const key in exportsInService) {
+              const filepath = JSON.parse(key.replace("front-service-", "")).id;
+              const importStr = `import {${exportsInService[key].join(
+                ",",
+              )}} from "${filepath}"\n`;
+              res += importStr;
+              for (const exp of exportsInService[key]) {
+                res += `adapter.register("${exp}",${exp})\n`;
               }
-              //TODO: for dev use hot reload
-            }, isDev ? 2000 : 10);
-          });
+            }
+            return res
+          }
         }
       },
     },

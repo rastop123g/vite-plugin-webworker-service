@@ -2,7 +2,8 @@ import { ViteDevServer, type Plugin } from "vite";
 import { readFileSync } from "fs";
 import path from "path";
 import { getExports } from "./getExports";
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
+import { ImportDeclaration, Program } from "./types/ast";
 const __filename = fileURLToPath(import.meta.url);
 
 const __dirname = path.dirname(__filename);
@@ -55,9 +56,9 @@ export default function workerServicePlugin(): Plugin {
               const exps = getExports(ast);
               exportsInService[replacedID] = exps;
             }
-            const mod = server?.moduleGraph.getModuleById(workerName)
-            if(mod) {
-              server?.reloadModule(mod)
+            const mod = server?.moduleGraph.getModuleById(workerName);
+            if (mod) {
+              server?.reloadModule(mod);
             }
           } else {
             if (!resolution || resolution.external) return resolution;
@@ -140,7 +141,7 @@ export default function workerServicePlugin(): Plugin {
                 res += `adapter.register("${exp}",${exp})\n`;
               }
             }
-            return res
+            return res;
           }
         }
       },
@@ -169,19 +170,31 @@ export default function workerServicePlugin(): Plugin {
         };
       }
       let res = src;
-      const matches = src.matchAll(
-        /import (.*?) from ['"](.*?)\.service(.*?)['"];?\n/g,
-      );
-      for (const match of matches) {
-        usedImports.push({
-          members: match[1],
-          file: match[2] + ".service" + match[3],
-          importer: id,
-        });
-        res = res.replace(
-          match[0],
-          `import ${match[1]} from "change-to-worker${match[2]}.service${match[3]}";\n`,
-        );
+      try {
+        const ast = this.parse(src);
+        const imports = getImportsfromAST(ast as Program);
+        if (imports.length > 0) {
+          for (const imp of imports) {
+            if (
+              imp.file &&
+              new RegExp("\\.service(\\.ts|\\.js|)[\"']$").test(imp.file)
+            ) {
+              usedImports.push({
+                members: `{${imp.members.join(",")}}`,
+                file: imp.file,
+                importer: id,
+              });
+              res = res.replace(
+                imp.file,
+                `"change-to-worker${imp.file
+                  .replace(/"/g, "")
+                  .replace(/;/g, "")}";`,
+              );
+            }
+          }
+        }
+      } catch {
+        // not parse ast
       }
       return {
         code: res,
@@ -192,4 +205,20 @@ export default function workerServicePlugin(): Plugin {
       idp++;
     },
   };
+}
+
+function getImportsfromAST(ast: Program) {
+  const body = ast.body;
+  const imports = body.filter(
+    (node) => node.type === "ImportDeclaration",
+  ) as ImportDeclaration[];
+  const res = imports.map((entry: ImportDeclaration) => {
+    return {
+      file: entry.source.raw,
+      members: entry.specifiers.map((item) => {
+        return item.local.name;
+      }),
+    };
+  });
+  return res;
 }

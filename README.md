@@ -97,3 +97,9 @@ however, calls to these functions on the main thread always return a Promise.
 This project is licensed under the MIT License
 
 ---
+
+# CHANGELOG
+
+## 1.0.4
+
+- Fixed the way to replace imports, from regular expression to AST parse

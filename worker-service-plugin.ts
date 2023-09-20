@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 
 const __dirname = path.dirname(__filename);
 
-export default function workerServicePlugin(): Plugin {
+export default function workerServicePlugin(settings: Settings = defaultSettings): Plugin {
   const workerName = `virtual-webworker-${Date.now()}.js`;
   let idr = 0;
   let idp = 0;
@@ -177,7 +177,7 @@ export default function workerServicePlugin(): Plugin {
           for (const imp of imports) {
             if (
               imp.file &&
-              new RegExp("\\.service(\\.ts|\\.js|)[\"']$").test(imp.file)
+              new RegExp("\\."+settings.ext+"(\\.ts|\\.js|)[\"']$").test(imp.file)
             ) {
               usedImports.push({
                 members: `{${imp.members.join(",")}}`,
@@ -221,4 +221,12 @@ function getImportsfromAST(ast: Program) {
     };
   });
   return res;
+}
+
+interface Settings {
+  ext: string
+}
+
+const defaultSettings: Settings = {
+  ext: "service"
 }

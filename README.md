@@ -100,6 +100,10 @@ This project is licensed under the MIT License
 
 # CHANGELOG
 
+## 1.1.0
+
+- Added settings, and field **ext** for change **.service** to any file ending
+
 ## 1.0.4
 
 - Fixed the way to replace imports, from regular expression to AST parse
